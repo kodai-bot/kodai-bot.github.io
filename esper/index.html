@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Esper · Demo</title>
+  <meta name="description" content="Esper: a Blade Runner–inspired explorer for archaeological signals. Read-only demo over a snapshot of Co. Sligo: monuments, place-names and radiocarbon dates.">
+
+  <!-- Design system fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/demo.css">
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <header id="app-header">
+    <div class="hdr-left">
+      <span class="hdr-title">ArchaeoSignal · Esper</span>
+      <button class="demo-badge" id="demo-about-btn" title="About this demo">demo · read-only</button>
+      <span class="hdr-meta dim" id="signal-count">loading…</span>
+      <div class="btn-group" id="grid-controls">
+        <button class="btn-grid active" data-level="1km">1km</button>
+        <button class="btn-grid" data-level="100m">100m</button>
+        <button class="btn-grid" data-level="10m">10m</button>
+        <button class="btn-grid" data-level="1m">1m</button>
+      </div>
+    </div>
+    <div class="hdr-centre">
+      <!-- Source toggles -->
+      <span class="hdr-label dim">sources</span>
+      <div class="btn-group" id="source-controls">
+        <button class="btn-src active" data-src="RMP" title="RMP monuments">RMP</button>
+        <button class="btn-src active" data-src="ONO" title="Onomasticon toponyms">ONO</button>
+        <button class="btn-src" data-src="RC"  title="Radiocarbon dates">RC</button>
+      </div>
+      <button class="hdr-btn" id="btn-load" title="Load signals for selected territory">load</button>
+      <!-- Tau point slicer -->
+      <span class="hdr-label dim" style="margin-left:10px">τ</span>
+      <div id="tau-slider-wrap">
+        <input type="range" id="tau-point" min="0" max="10000" value="0" step="25">
+        <span class="tau-val dim" id="tau-point-label">now</span>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <button class="hdr-btn" id="btn-clear-territory" style="display:none" title="Clear territory — start new area">✕ new area</button>
+      <button class="hdr-btn active" id="btn-baronies" title="Territory navigation layer">navigate</button>
+      <button class="hdr-btn active" id="btn-map-toggle" title="Toggle basemap">Map</button>
+      <button class="hdr-btn accent" id="btn-report" title="Report (coming soon)">Report ✦</button>
+    </div>
+  </header>
+
+  <!-- ── Three-panel main ────────────────────────────────────────────── -->
+  <main id="app-main">
+
+    <!-- Left: Signal Field -->
+    <section id="signal-field">
+      <div id="map"></div>
+      <div id="map-loading"><div class="map-loading-spinner"></div></div>
+      <div id="map-legend">
+        <span class="legend-dot rmp"></span><span>RMP</span>
+        <span class="legend-dot ono"></span><span>Ono</span>
+        <span class="legend-dot field"></span><span>Field</span>
+        <span class="legend-dot lidar"></span><span>LiDAR</span>
+        <label class="legend-names-label" title="Show townland names (zoom ≥ 12)">
+          <input type="checkbox" id="townland-names-toggle"> tl·names
+        </label>
+      </div>
+      <div id="map-coords"></div>
+    </section>
+
+    <!-- Centre: Worldline -->
+    <section id="worldline-panel">
+      <canvas id="worldline-canvas"></canvas>
+    </section>
+
+    <!-- Right: Identity Slug + Inference -->
+    <section id="right-panel">
+      <div id="identity-slug">
+        <p class="slug-empty dim">select a signal</p>
+      </div>
+      <div id="inference-summary">
+        <p class="infer-empty dim">inference chain: no bundles loaded</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Bottom: Pure-φ Spectrograph ────────────────────────────────── -->
+  <footer id="phi-strip">
+    <div class="phi-header">
+      <span class="phi-title">φ spectrograph</span>
+      <span class="phi-meta dim" id="phi-meta">pure phi fingerprint</span>
+    </div>
+    <canvas id="phi-canvas"></canvas>
+  </footer>
+
+  <!-- ── Loading overlay ─────────────────────────────────────────────── -->
+  <div id="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <p class="dim">loading signal field…</p>
+    </div>
+  </div>
+
+  <!-- ── About this demo ─────────────────────────────────────────────── -->
+  <div id="demo-about" class="open" role="dialog" aria-modal="true" aria-labelledby="demo-about-title">
+    <div class="demo-card">
+      <p class="demo-kicker">esper · v1 · read-only demo</p>
+      <h1 id="demo-about-title">Enhance.</h1>
+      <p>Esper is an explorer for archaeological evidence, modelled on the photo-analysis machine in <em>Blade Runner</em>.
+        Every record (a monument, a place-name in an early Irish text, a radiocarbon date) is treated as a
+        <strong>signal</strong>: something observed at a place, with a span of time behind it. You move through them
+        by territory and by depth, and see how each one connects to its neighbours in space, time and name.</p>
+      <p>This page runs the real Esper interface over a frozen snapshot of <strong>Co. Sligo</strong>:
+        6,612 signals across its six baronies. Nothing is sent anywhere, and nothing can be changed. Best on a laptop or desktop screen.</p>
+      <ol>
+        <li><b>Click a barony</b> in Sligo (they glow amber on hover), then press <b>load</b>.</li>
+        <li><b>Click a signal</b>: its worldline, record and φ spectrograph appear.</li>
+        <li>Press <b>Draw relations</b> to see what it is linked to nearby, in time, and by name. Try Drumcliff, north of Sligo town: round tower, high cross and church.</li>
+        <li>The <b>1km · 100m · 10m · 1m</b> buttons change the grid as you zoom in. <b>Map</b> shows a basemap underneath.</li>
+      </ol>
+      <p class="demo-small">Version 1 of an ongoing research programme; the signal structure is being redesigned for v2.
+        By <a href="https://kodai-bot.github.io/">Dylan Foley</a> · <a href="https://allismotion.org">allismotion.org</a></p>
+      <details class="demo-credits">
+        <summary>Data and credits</summary>
+        <ul>
+          <li>Monuments: Sites and Monuments Record, National Monuments Service (Historic Environment Viewer), CC BY 4.0.</li>
+          <li>Place-names: E. Hogan, <em>Onomasticon Goedelicum</em> (1910).</li>
+          <li>Radiocarbon: Robert Chapple, <em>Catalogue of Radiocarbon Determinations &amp; Dendrochronology Dates</em>, used with his kind permission. Thanks, Robert.</li>
+          <li>Barony and townland boundaries: Tailte Éireann (Ordnance Survey Ireland), National Statutory Boundaries, CC BY 4.0.</li>
+          <li>Basemap: © OpenStreetMap contributors, © CARTO. Map library: Leaflet.</li>
+          <li>All records were converted into the experimental signal format by the Esper pipeline, so positions, dates and classes are interpretations of the sources, not the sources themselves.</li>
+        </ul>
+      </details>
+      <button id="demo-start">start ▸</button>
+    </div>
+  </div>
+
+  <!-- Read-only stand-in for the Esper API (must load before the app) -->
+  <script src="js/demo-api.js"></script>
+
+  <!-- Leaflet + cluster -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- Signal field + constellation (plain classes, must load before module) -->
+  <script src="js/map-view.js"></script>
+  <script src="js/constellation.js"></script>
+
+  <!-- Application (ES modules) -->
+  <script type="module" src="js/app.js"></script>
+  <script>
+    (function () {
+      var box = document.getElementById('demo-about');
+      function close() { box.classList.remove('open'); }
+      document.getElementById('demo-start').addEventListener('click', close);
+      document.getElementById('demo-about-btn').addEventListener('click', function () { box.classList.add('open'); });
+      box.addEventListener('click', function (e) { if (e.target === box) close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    })();
+  </script>
+</body>
+</html>
