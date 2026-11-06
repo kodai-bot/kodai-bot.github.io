@@ -50,8 +50,8 @@ class MapView {
 
         // Tile layer — hidden by default (Esper mode)
         this.tileLayer = L.tileLayer(
-            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            { subdomains: 'abcd', maxZoom: 19, opacity: 0 }
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            { maxZoom: 16, opacity: 0, attribution: 'Tiles © Esri' }
         ).addTo(this.map);
 
         // Grid canvas overlay
