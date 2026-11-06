@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Standing Room</title>
+  <meta name="description" content="La Juliana, wrecked at Streedagh in 1588, carried about 300 soldiers. No picture of her survives. From her tonnage rating and her sister ships' measurements: how big she was, and how many castle decks it took to give every soldier room to stand.">
+  <meta name="theme-color" content="#0a0a14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a14;
+      --panel: #11111f;
+      --panel2: #161628;
+      --line: #2a2a40;
+      --fg: #e0e0e0;
+      --dim: #8a8a9a;
+      --faint: #55556a;
+      --pink: #ff2a6d;
+      --green: #00ff9f;
+      --cyan: #00fff9;
+      --blue: #00b4ff;
+      --purple: #c46bff;
+      --yellow: #ffdd00;
+      --moon: #f4efd6;
+      --bad: #ff4d6d;
+      --good: #00ff9f;
+      --wood: #c9a46a;
+      --serif: "Instrument Serif", Georgia, serif;
+      /* epistemic tags */
+      --t-source: var(--cyan);
+      --t-derived: var(--green);
+      --t-inferred: var(--yellow);
+      --t-hypothesis: var(--purple);
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      color: var(--fg);
+      font: 14px/1.65 "JetBrains Mono", ui-monospace, monospace;
+      background:
+        radial-gradient(ellipse 70% 40% at 50% -5%, rgba(201,164,106,.10), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0,255,159,.05), transparent 70%),
+        var(--bg);
+      overflow-x: hidden;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2000;
+      background: repeating-linear-gradient(to bottom, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover, a:focus-visible { color: var(--green); text-shadow: 0 0 8px var(--green); outline: none; }
+    main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 40px; }
+    code { color: var(--fg); }
+
+    .crumb { color: var(--dim); font-size: 12px; margin: 0 0 28px; }
+    .crumb .p { color: var(--green); }
+    .kicker { margin: 0; color: var(--pink); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; }
+    h1 {
+      margin: 6px 0 14px;
+      font-family: var(--serif); font-style: italic; font-weight: 400;
+      font-size: clamp(3rem, 11vw, 6rem); line-height: .95;
+      color: var(--moon);
+      text-shadow: 0 0 6px rgba(244,239,214,.5), 0 0 30px rgba(201,164,106,.35), 0 0 80px rgba(0,255,159,.25);
+    }
+    .lede { max-width: 66ch; color: #c9c9d4; margin: 0 0 10px; }
+    .lede em { font-family: var(--serif); font-style: italic; font-size: 1.18em; color: var(--moon); }
+
+    section { margin-top: 64px; }
+    h2 {
+      font-size: .82rem; text-transform: uppercase; letter-spacing: .2em;
+      margin: 0 0 6px; color: var(--yellow);
+      display: flex; align-items: center; gap: 12px;
+    }
+    h2::before { content: "//"; color: var(--pink); }
+    h2::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+    .sub { color: var(--dim); margin: 0 0 18px; max-width: 72ch; }
+    .sub b { color: var(--fg); font-weight: 400; }
+
+    .tag {
+      display: inline-block; font-size: 9.5px; padding: 0 6px; border: 1px solid; border-radius: 2px;
+      text-transform: uppercase; letter-spacing: .12em; line-height: 1.6; vertical-align: 1px;
+      color: var(--c); border-color: color-mix(in srgb, var(--c) 45%, transparent);
+    }
+    .tag.source { --c: var(--t-source); }
+    .tag.derived { --c: var(--t-derived); }
+    .tag.inferred { --c: var(--t-inferred); }
+    .tag.hypothesis { --c: var(--t-hypothesis); }
+    .tag.here { --c: var(--pink); }
+
+    /* ── chain ─────────────────────────────────────────── */
+    .chain { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 1px solid var(--line); background: var(--panel); }
+    .step { padding: 14px 14px 16px; border-right: 1px solid var(--line); position: relative; }
+    .step:last-child { border-right: 0; }
+    .step:not(:last-child)::after {
+      content: "▸"; position: absolute; right: -7px; top: 14px; color: var(--pink); font-size: 12px;
+      background: var(--panel); line-height: 1; z-index: 1;
+    }
+    .step .k { font-size: 10px; color: var(--faint); letter-spacing: .14em; text-transform: uppercase; margin: 0 0 6px; }
+    .step .v { font-family: var(--serif); font-size: 1.55em; line-height: 1.15; color: var(--moon); margin: 8px 0 6px; }
+    .step p { margin: 0; color: var(--dim); font-size: 12px; }
+
+    /* ── fleet ─────────────────────────────────────────── */
+    .panel { border: 1px solid var(--line); background: #07070f; }
+    .panel svg { display: block; width: 100%; height: auto; }
+    .note { font-size: 11px; color: var(--dim); margin-top: 8px; max-width: 90ch; }
+    .flag { margin-top: 14px; padding: 12px 16px; border: 1px solid rgba(255,221,0,.35); background: rgba(255,221,0,.05); color: #d8d4c0; font-size: 12.5px; }
+    .flag b { color: var(--yellow); font-weight: 400; }
+
+    /* ── ship builder ──────────────────────────────────── */
+    .builder { border: 1px solid var(--line); background: var(--panel); }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px 22px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+    .ctl label { display: block; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
+    .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+    .seg button {
+      font: inherit; font-size: 12px; background: transparent; color: var(--dim);
+      border: 1px solid var(--line); padding: 3px 9px; cursor: pointer; border-radius: 2px;
+    }
+    .seg button:hover { color: var(--fg); border-color: var(--dim); }
+    .seg button.on { color: var(--bg); background: var(--green); border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,159,.4); }
+    .seg button:focus-visible { outline: 1px solid var(--cyan); outline-offset: 1px; }
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 18px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--dim); align-items: center; }
+    .presets button { font: inherit; font-size: 11px; background: none; color: var(--cyan); border: 1px dashed rgba(0,255,249,.35); padding: 2px 8px; cursor: pointer; }
+    .presets button:hover { border-style: solid; }
+    .ship { background: #07070f; overflow-x: auto; }
+    .ship svg { display: block; width: 100%; min-width: 680px; height: auto; }
+    .readout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0; border-top: 1px solid var(--line); }
+    .gauge { padding: 16px 18px 18px; border-right: 1px solid var(--line); }
+    .big { font-family: var(--serif); font-size: 3.2rem; line-height: 1; color: var(--c, var(--fg)); text-shadow: 0 0 18px color-mix(in srgb, var(--c, #fff) 45%, transparent); }
+    .big small { font-family: "JetBrains Mono", monospace; font-size: .9rem; color: var(--dim); text-shadow: none; margin-left: 6px; }
+    .verdict { margin: 6px 0 12px; font-size: 12.5px; color: var(--c); }
+    .areas { padding: 12px 18px 16px; font-size: 12px; }
+    .areas table { width: 100%; border-collapse: collapse; }
+    .areas td { padding: 3px 0; border-bottom: 1px dashed var(--line); color: var(--dim); }
+    .areas td.n { text-align: right; color: var(--fg); white-space: nowrap; }
+    .areas tr.tot td { color: var(--fg); border-bottom: 0; padding-top: 6px; }
+    .areas i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; background: var(--c); }
+
+    /* ── minimum grid ──────────────────────────────────── */
+    .mins { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .mins th { font-weight: 400; color: var(--dim); text-align: left; padding: 6px 8px; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+    .mins td { padding: 0; border-bottom: 1px dashed var(--line); }
+    .mins td.rh { padding: 8px; color: var(--dim); white-space: nowrap; }
+    .mins td.rh b { color: var(--fg); font-weight: 400; }
+    .mins button {
+      width: 100%; text-align: left; font: inherit; font-size: 12px; background: none; border: 0; color: var(--fg);
+      padding: 8px; cursor: pointer; display: flex; gap: 8px; align-items: center;
+    }
+    .mins button:hover, .mins button:focus-visible { background: rgba(0,255,159,.06); outline: none; }
+    .mins button.no { color: var(--bad); }
+    .mins button.doc { color: var(--green); }
+    .stack { display: inline-flex; gap: 6px; align-items: flex-end; }
+    .stack span { display: inline-flex; flex-direction: column-reverse; gap: 1px; }
+    .stack span i { display: block; width: 12px; height: 4px; background: var(--wood); opacity: .85; }
+    .stack span i.half { width: 6px; }
+    .scroll { overflow-x: auto; border: 1px solid var(--line); background: var(--panel); }
+    .scroll table { min-width: 640px; }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--c); padding: 14px 18px 16px; }
+    .card h3 { margin: 0 0 6px; font-family: var(--serif); font-weight: 400; font-size: 1.45em; color: var(--moon); line-height: 1.2; }
+    .card p { margin: 0 0 8px; color: #c4c4cf; font-size: 13px; }
+
+    footer { margin-top: 70px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--dim); font-size: 12px; }
+    footer p { margin: 0 0 8px; max-width: 80ch; }
+
+    @media (max-width: 760px) {
+      .chain { grid-template-columns: 1fr; }
+      .step { border-right: 0; border-bottom: 1px solid var(--line); }
+      .step:not(:last-child)::after { content: "▾"; right: auto; left: 14px; top: auto; bottom: -7px; }
+      .readout { grid-template-columns: 1fr; }
+      .gauge { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <p class="crumb"><span class="p">~ $</span> <a href="../../">kodai-bot</a> / <a href="../">streedagh</a> / ships</p>
+
+  <header>
+    <p class="kicker">Streedagh · 1588 · a ship rebuilt from numbers</p>
+    <h1>Standing room</h1>
+    <p class="lede">La Juliana was one of the three Armada ships that broke up at Streedagh. She carried about <b>65–70 mariners and 290–325 soldiers</b>. No drawing of her survives, and the wreck lies in pieces on the seabed. What does survive is a column of administrative figures: her tonnage rating, and the measured dimensions of ships of her squadron.</p>
+    <p class="lede">From those alone you can ask a plain question: <em>where did three hundred soldiers stand?</em> The answer forces a shape on the ship. A single deck at each end is nowhere near enough. Stepped castles, two and three decks high, fore and aft, come close.</p>
+  </header>
+
+  <section id="chain">
+    <h2>From a ruler to a ship</h2>
+    <p class="sub">Each step is tagged by how it is known: <span class="tag source">source</span> read from a document, <span class="tag derived">derived</span> by arithmetic, <span class="tag inferred">inferred</span> from comparison, <span class="tag hypothesis">hypothesis</span> assumed and varied. Nothing later in the chain is allowed to borrow certainty from an earlier step.</p>
+    <div class="chain" id="chain-steps"></div>
+  </section>
+
+  <section id="fleet">
+    <h2>Her sisters, to scale</h2>
+    <p class="sub">Four ships whose dimensions were recorded in codos, drawn in plan at the same scale. Juliana's own dimensions are lost, but her rating is known (860 wartime toneladas, so 716.7 machos). Fitting her rating against the three broad-bodied ships gives her size three ways. The duke's galleon is long and narrow, a different family, so it is left out of the fit.</p>
+    <div class="panel"><svg id="fleet-svg" viewBox="0 0 1000 900" role="img" aria-label="Plan outlines of the comparator ships and La Juliana's three estimates, to scale"></svg></div>
+    <div class="flag"><b>A ruler that doesn't add up.</b> The source gives the codo as 33/48 of a vara of 835.9 mm, and prints the result as 547.7 mm. The arithmetic gives <span id="codo-txt">574.7</span> mm. The reconstruction uses the arithmetic and flags the printed figure as a probable slip. Using 547.7 would shrink every ship here by <span id="codo-pct">4.7</span>%, and every deck area by nearly twice that.</div>
+  </section>
+
+  <section id="builder-section">
+    <h2>Build the castles</h2>
+    <p class="sub">Side view and plan of Juliana. Each dot is one soldier, spread over every deck in proportion to its usable area; the <span style="color:var(--cyan)">cyan</span> dots are the mariners, who keep the waist clear to work the ship. Change the castles and watch the space per soldier against the <b>1.5–2.0 m²</b> that was the period allowance.</p>
+    <div class="builder">
+      <div class="controls">
+        <div class="ctl"><label>Hull and castle proportions</label><div class="seg" data-k="scenario"></div></div>
+        <div class="ctl"><label>Soldiers</label><div class="seg" data-k="soldiers"></div></div>
+        <div class="ctl"><label>Forecastle decks</label><div class="seg" data-k="fore"></div></div>
+        <div class="ctl"><label>Aftercastle decks</label><div class="seg" data-k="aft"></div></div>
+        <div class="ctl"><label>Lower deck given to soldiers</label><div class="seg" data-k="share"></div></div>
+      </div>
+      <div class="presets">
+        <span>try:</span>
+        <button data-p="single">one deck each end</button>
+        <button data-p="doc">the reconstruction's rule (2 fore · 2 + ½ aft)</button>
+        <button data-p="docdeck">…plus 40% of the lower deck</button>
+      </div>
+      <div class="ship"><svg id="ship-svg" viewBox="0 0 1000 800" role="img" aria-label="Side elevation and plan of La Juliana with soldiers on each deck"></svg></div>
+      <div class="readout">
+        <div class="gauge">
+          <div class="big" id="per">–<small>m² per soldier</small></div>
+          <p class="verdict" id="verdict"></p>
+          <svg id="gauge-svg" viewBox="0 0 440 54" style="width:100%;height:auto;display:block"></svg>
+        </div>
+        <div class="areas"><table id="areas"></table></div>
+      </div>
+    </div>
+    <p class="note">Deck heights in the drawing are illustrative (about 2 m a deck); the calculation uses floor area only. Usable area = gross floor × (1 − deduction for masts, stairs, hatches, guns), and open roofs are further reduced for edges and weather. All proportions are from §26.3 of the reconstruction, at the low, central or high setting.</p>
+  </section>
+
+  <section id="minimum">
+    <h2>Fewest decks that give room</h2>
+    <p class="sub">For every combination: the smallest castle stack, counting a shortened top deck as half, that reaches 1.5 m² per soldier. <span class="tag here">computed here</span> The reconstruction tabulates only its own floor rule; this table varies the number of decks with everything else held fixed. Click a cell to load it above. <span style="color:var(--green)">Green</span> marks cells the reconstruction's own rule satisfies.</p>
+    <div class="scroll"><table class="mins" id="mins"></table></div>
+  </section>
+
+  <section id="reading">
+    <h2>What it says, and what it doesn't</h2>
+    <div class="cards">
+      <div class="card" style="--c:var(--bad)"><h3>One deck at each end can't do it</h3><p>With single-level castles, even the most generous proportions give about 1.0 m² per soldier, and the central case 0.75. Three hundred men would have had to fill the waist the mariners needed to sail the ship.</p></div>
+      <div class="card" style="--c:var(--green)"><h3>Stepped castles nearly can</h3><p>In the central case, two decks forward and two and a half aft give 1.29 m² per soldier from the upperworks alone, and reach the allowance once part of the deck below is used. That is the shape contemporary pictures suggest, reached here without looking at them.</p></div>
+      <div class="card" style="--c:var(--yellow)"><h3>Not a floor plan</h3><p>Nobody had a private 1.5 m². Soldiers shared space in shifts, used the open roofs in fair weather, and crowded below in foul. The figures say how much floor the ship must have had, not how it was lived in.</p></div>
+      <div class="card" style="--c:var(--purple)"><h3>Still to verify</h3><p>Which codo the clerks measured with, and the rating formula with its apparent 3% deduction, both need checking against the primary sources before these numbers can be called a reconstruction rather than a test.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Method and code: <a href="https://github.com/kodai-bot/streedagh-armada">kodai-bot/streedagh-armada</a>. The argument is §26–§28 of the working reconstruction (v0.7); <code>2_reconstruction/stepped_castle_capacity.py</code> recomputes it from the stated inputs, checks all 158 figures the document prints (they match), and writes this page's data. The page recomputes the areas in the browser from the same inputs.</p>
+    <p>Ship dimensions, ratings and personnel are as cited in the reconstruction; the codo as printed in Martin (1984), recomputed. The three ships at Streedagh are war graves.</p>
+    <p>By <a href="../../">Dylan Foley</a> · <a href="https://allismotion.org">allismotion.org</a> · see also <a href="../">Cuéllar's nights</a> and <a href="../../esper/">Esper</a></p>
+  </footer>
+</main>
+
+<script>
+(async function () {
+  'use strict';
+  const D = await (await fetch('capacity.json')).json();
+  const NS = 'http://www.w3.org/2000/svg';
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function el(tag, attrs, parent, text) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  const f1 = x => x.toFixed(1), f2 = x => x.toFixed(2);
+  const I = D.inputs, J = D.juliana, SC = ['low', 'central', 'high'];
+  const codo = I.codo_m;
+
+  // ── the chain ─────────────────────────────────────────────────────────
+  const env = J.envelope;
+  const chain = [
+    ['1 · the ruler', 'derived', `${(codo * 1000).toFixed(1)} mm`, `One codo = 33/48 of a Castilian vara (835.9 mm).`],
+    ['2 · the sisters', 'source', '4 ships', `Length, beam and depth in codos, and their ratings in machos (× 1.2 = wartime toneladas).`],
+    ['3 · La Juliana', 'inferred', `${f1(env.central[0])} × ${f1(env.central[1])} m`, `From her rating of 716.7 machos, fitted three ways; range ${f1(env.low[0])}–${f1(env.high[0])} m long.`],
+    ['4 · the castles', 'hypothesis', 'stepped', `Castle lengths, widths, deck count and deductions, each at low, central and high.`],
+    ['5 · the soldiers', 'derived', `${f2(D.areas.central.net_upper / 290)} m²`, `Usable upperworks area per soldier, central case, 290 men. The allowance was 1.5–2.0.`],
+  ];
+  for (const [k, t, v, p] of chain) {
+    const d = document.createElement('div');
+    d.className = 'step';
+    d.innerHTML = `<p class="k">${k}</p><span class="tag ${t}">${t}</span><div class="v">${v}</div><p>${p}</p>`;
+    $('chain-steps').appendChild(d);
+  }
+  $('codo-txt').textContent = (codo * 1000).toFixed(1);
+  $('codo-pct').textContent = ((1 - I.codo_martin_m / codo) * 100).toFixed(1);
+
+  // ── hull outline in plan: pointed bow, square-ish stern ───────────────
+  function planPath(x0, y0, L, B, s) {
+    const l = L * s, h = B * s / 2, cy = y0;
+    return `M${x0},${cy - h * .78} C${x0 + l * .12},${cy - h} ${x0 + l * .55},${cy - h} ${x0 + l * .72},${cy - h * .95}` +
+      ` C${x0 + l * .9},${cy - h * .8} ${x0 + l},${cy - h * .25} ${x0 + l},${cy}` +
+      ` C${x0 + l},${cy + h * .25} ${x0 + l * .9},${cy + h * .8} ${x0 + l * .72},${cy + h * .95}` +
+      ` C${x0 + l * .55},${cy + h} ${x0 + l * .12},${cy + h} ${x0},${cy + h * .78} Z`;
+  }
+
+  // ── fleet panel ───────────────────────────────────────────────────────
+  (function fleet() {
+    const svg = $('fleet-svg'), S = 14, X0 = 230;
+    const rows = D.ships.map(s => ({ name: s.name, m: s.m, machos: s.machos, fit: s.in_fit, kind: 'ship' }));
+    rows.splice(2, 0, { name: 'La Juliana', kind: 'jul' });   // between Lavia and Regazona
+    // axis ticks
+    const grid = el('g', {}, svg);
+    let y = 24;
+    for (const r of rows) {
+      y += (r.kind === 'ship' ? r.m[1] : env.high[1]) * S / 2;
+      if (r.kind === 'ship') {
+        const g = el('g', {}, svg);
+        el('path', { d: planPath(X0, y, r.m[0], r.m[1], S), fill: r.fit ? 'rgba(0,255,249,.08)' : 'rgba(138,138,154,.06)',
+          stroke: r.fit ? css('--cyan') : css('--faint'), 'stroke-width': 1.3 }, g);
+        el('text', { x: 16, y: y - 4, fill: css('--fg'), 'font-size': 13 }, g, r.name);
+        el('text', { x: 16, y: y + 13, fill: css('--dim'), 'font-size': 11 }, g,
+          `${r.machos} machos${r.fit ? '' : ' · not in fit'}`);
+        el('text', { x: X0 + r.m[0] * S + 10, y: y + 4, fill: css('--dim'), 'font-size': 11 }, g,
+          `${f1(r.m[0])} × ${f1(r.m[1])} m`);
+        y += r.m[1] * S / 2 + 34;
+      } else {
+        const g = el('g', {}, svg);
+        const cols = { interpolation: css('--yellow'), ols: css('--yellow'), cube_root: css('--yellow') };
+        for (const [k, v] of Object.entries(J.methods)) {
+          el('path', { d: planPath(X0, y, v.m[0], v.m[1], S), fill: 'none', stroke: cols[k], 'stroke-width': 1,
+            'stroke-dasharray': '4 3', opacity: .55 }, g);
+        }
+        const c = env.central;
+        el('path', { d: planPath(X0, y, c[0], c[1], S), fill: 'rgba(255,221,0,.10)', stroke: css('--yellow'), 'stroke-width': 1.8,
+          style: 'filter:drop-shadow(0 0 5px rgba(255,221,0,.5))' }, g);
+        el('text', { x: 16, y: y - 4, fill: css('--yellow'), 'font-size': 14, 'font-weight': 700 }, g, 'La Juliana');
+        el('text', { x: 16, y: y + 13, fill: css('--dim'), 'font-size': 11 }, g, '716.7 machos · inferred');
+        el('text', { x: X0 + env.high[0] * S + 10, y: y - 4, fill: css('--yellow'), 'font-size': 11 }, g,
+          `${f1(c[0])} × ${f1(c[1])} m`);
+        el('text', { x: X0 + env.high[0] * S + 10, y: y + 11, fill: css('--dim'), 'font-size': 10.5 }, g,
+          `three methods: ${f1(env.low[0])}–${f1(env.high[0])} m`);
+        y += c[1] * S / 2 + 34;
+      }
+    }
+    for (let m = 0; m <= 40; m += 5) {
+      const x = X0 + m * S;
+      el('line', { x1: x, x2: x, y1: 10, y2: y - 20, stroke: m % 10 ? '#14142a' : '#1d1d36' }, grid);
+      el('text', { x, y: y - 4, fill: css('--faint'), 'font-size': 11, 'text-anchor': 'middle' }, grid, `${m} m`);
+    }
+    svg.setAttribute('viewBox', `0 0 1000 ${y + 6}`);
+  })();
+
+  // ── the model (same formula as stepped_castle_capacity.py) ────────────
+  function areas(sc, fore, aft, top, share) {
+    const [L, B] = J.envelope[sc], g = D.geometry[sc], keep = 1 - g.deduction;
+    const main = L * B * g.planform;
+    const ffp = g.fore_len * L * g.fore_wid * B, afp = g.aft_len * L * g.aft_wid * B;
+    const parts = [];  // usable m² by place, for the dots
+    for (let i = 0; i < fore; i++) parts.push({ id: `f${i}`, a: ffp * keep, where: 'fore', lvl: i });
+    for (let i = 0; i < aft; i++) parts.push({ id: `a${i}`, a: afp * keep, where: 'aft', lvl: i });
+    if (top) parts.push({ id: 'at', a: g.third * afp * keep, where: 'aft', lvl: aft, top: true });
+    const op = keep * g.access;
+    parts.push({ id: 'fr', a: ffp * op, where: 'fore', lvl: fore, roof: true });
+    if (top) {
+      parts.push({ id: 'ar', a: g.third * afp * op, where: 'aft', lvl: aft + 1, roof: true, top: true });
+      parts.push({ id: 'atr', a: (1 - g.third) * afp * op, where: 'aft', lvl: aft, roof: true, terrace: true });
+    } else parts.push({ id: 'ar', a: afp * op, where: 'aft', lvl: aft, roof: true });
+    if (share) parts.push({ id: 'low', a: share * main * keep, where: 'lower' });
+    const enclosed = parts.filter(p => !p.roof && p.where !== 'lower').reduce((s, p) => s + p.a, 0);
+    const open = parts.filter(p => p.roof).reduce((s, p) => s + p.a, 0);
+    const lower = share * main * keep;
+    return { L, B, P: J.envelope[sc][2], g, main, ffp, afp, parts, enclosed, open, lower, total: enclosed + open + lower };
+  }
+  // self-check against the Python sweep
+  let worst = 0;
+  for (const r of D.sweep) for (const c of r.configs) {
+    const a = areas(r.scenario, c.fore, c.aft, c.aft_top, r.lower_share);
+    worst = Math.max(worst, Math.abs(a.total / r.soldiers - c.per_soldier));
+  }
+  if (worst > 0.001) console.warn('page model differs from stepped_castle_capacity.py by', worst);
+
+  // ── builder state and controls ────────────────────────────────────────
+  const st = { scenario: 'central', soldiers: 290, fore: 2, aft: '2.5', share: 0 };
+  const OPTS = {
+    scenario: SC.map(s => [s, s]),
+    soldiers: I.soldiers.map(n => [n, String(n)]),
+    fore: [[1, '1'], [2, '2'], [3, '3']],
+    aft: [['1', '1'], ['1.5', '1 + ½'], ['2', '2'], ['2.5', '2 + ½'], ['3', '3'], ['3.5', '3 + ½']],
+    share: I.lower_shares.map(s => [s, s ? `${Math.round(s * 100)}%` : 'none']),
+  };
+  const segs = {};
+  document.querySelectorAll('.seg').forEach(box => {
+    const k = box.dataset.k;
+    segs[k] = OPTS[k].map(([v, lab]) => {
+      const b = document.createElement('button');
+      b.textContent = lab;
+      b.addEventListener('click', () => { st[k] = v; draw(); });
+      box.appendChild(b);
+      return [v, b];
+    });
+  });
+  const PRESETS = {
+    single: { fore: 1, aft: '1', share: 0 },
+    doc: { fore: 2, aft: '2.5', share: 0 },
+    docdeck: { fore: 2, aft: '2.5', share: 0.4 },
+  };
+  document.querySelectorAll('.presets button').forEach(b =>
+    b.addEventListener('click', () => { Object.assign(st, PRESETS[b.dataset.p]); draw(); }));
+
+  // ── drawing ───────────────────────────────────────────────────────────
+  const svg = $('ship-svg');
+  const S = 26, X0 = 70, DECK = 250, LH = 2.0;    // px per m, stern x, main-deck y, deck height (m, illustrative)
+  const PLAN_Y = 612;
+
+  function dots(g, n, x, y, w, h, color) {
+    if (n <= 0 || w <= 2 || h <= 2) return;
+    let cols = Math.max(1, Math.round(Math.sqrt(n * w / h)));
+    let rows = Math.ceil(n / cols);
+    while (rows * cols < n) cols++;
+    const dx = w / cols, dy = h / rows, r = Math.min(2.6, dx * .36, dy * .36);
+    let k = 0;
+    for (let j = 0; j < rows && k < n; j++)
+      for (let i = 0; i < cols && k < n; i++, k++)
+        el('circle', { cx: x + dx * (i + .5), cy: y + dy * (j + .5), r, fill: color }, g);
+  }
+  function apportion(n, weights) {   // largest remainder
+    const tot = weights.reduce((a, b) => a + b, 0);
+    const raw = weights.map(w => n * w / tot), out = raw.map(Math.floor);
+    let left = Math.round(n) - out.reduce((a, b) => a + b, 0);
+    raw.map((r, i) => [r - out[i], i]).sort((a, b) => b[0] - a[0]).slice(0, left).forEach(([, i]) => out[i]++);
+    return out;
+  }
+
+  function draw() {
+    for (const k in segs) for (const [v, b] of segs[k]) b.classList.toggle('on', v === st[k]);
+    const aftN = parseFloat(st.aft), aftFull = Math.floor(aftN), top = aftN % 1 !== 0;
+    const A = areas(st.scenario, st.fore, aftFull, top, st.share);
+    const per = A.total / st.soldiers;
+    const col = per >= I.benchmark[0] ? css('--good') : per >= 1.2 ? css('--yellow') : css('--bad');
+
+    svg.innerHTML = '';
+    const g = A.g, L = A.L * S, xs = X0, xb = X0 + L;
+    const wood = css('--wood'), faint = css('--faint');
+    // sea
+    const wl = DECK + 3.6 * S;
+    el('rect', { x: 0, y: wl, width: 1000, height: DECK + 7 * S - wl, fill: 'rgba(0,180,255,.035)' }, svg);
+    el('line', { x1: 0, x2: 1000, y1: wl, y2: wl, stroke: 'rgba(0,180,255,.35)', 'stroke-dasharray': '2 5' }, svg);
+    el('text', { x: 992, y: wl - 6, fill: 'rgba(0,180,255,.6)', 'font-size': 10, 'text-anchor': 'end' }, svg, 'waterline (illustrative)');
+
+    // hull in elevation
+    const keel = DECK + A.P * S;
+    el('path', {
+      d: `M${xs - 8},${DECK} L${xb + 14},${DECK} C${xb + 30},${DECK + 20} ${xb + 10},${keel - 30} ${xb - 40},${keel}` +
+         ` L${xs + 30},${keel} C${xs + 6},${keel - 20} ${xs - 4},${DECK + 60} ${xs - 8},${DECK} Z`,
+      fill: 'rgba(201,164,106,.06)', stroke: wood, 'stroke-width': 1.4 }, svg);
+    // lower principal deck
+    const lowY = DECK + 2.1 * S;
+    el('line', { x1: xs + 4, x2: xb + 6, y1: lowY, y2: lowY, stroke: wood, opacity: .45, 'stroke-dasharray': '6 4' }, svg);
+    el('text', { x: xs + 10, y: lowY + 14, fill: faint, 'font-size': 10 }, svg, 'lower principal deck');
+    el('text', { x: (xs + xb) / 2, y: keel - 10, fill: faint, 'font-size': 10, 'text-anchor': 'middle' }, svg,
+      'hold: stores, guns, siege train');
+
+    // castles
+    const fl = g.fore_len * L, al = g.aft_len * L, tl = g.third * al, H = LH * S;
+    const fx = xb - fl;
+    const box = (x, y, w, h, o = .10) => el('rect', { x, y, width: w, height: h, fill: `rgba(201,164,106,${o})`, stroke: wood, 'stroke-width': 1.2 }, svg);
+    for (let i = 0; i < st.fore; i++) box(fx, DECK - H * (i + 1), fl, H);
+    for (let i = 0; i < aftFull; i++) box(xs, DECK - H * (i + 1), al, H);
+    if (top) box(xs, DECK - H * (aftFull + 1), tl, H, .14);
+    // main deck line
+    el('line', { x1: xs - 8, x2: xb + 14, y1: DECK, y2: DECK, stroke: wood, 'stroke-width': 2 }, svg);
+    el('text', { x: (xs + al + fx) / 2, y: DECK - 0.55 * S - 8, fill: css('--cyan'), 'font-size': 10, 'text-anchor': 'middle', opacity: .8 }, svg, 'the waist: mariners');
+    // masts (illustrative)
+    for (const [fr, h] of [[.62, 9.5], [.4, 8.5], [.16, 6]])
+      el('line', { x1: xs + fr * L, x2: xs + fr * L, y1: DECK, y2: DECK - h * S > 8 ? DECK - h * S : 8, stroke: faint, 'stroke-width': 1.5, opacity: .5 }, svg);
+
+    // soldiers
+    const parts = A.parts, n = apportion(st.soldiers, parts.map(p => p.a));
+    const gd = el('g', {}, svg);
+    parts.forEach((p, i) => {
+      let x, y, w, h;
+      const pad = 3;
+      if (p.where === 'lower') {
+        // a strip of the lower deck, its length in proportion to the share given to soldiers
+        w = (xb - xs - 60) * st.share;
+        x = (xs + xb - w) / 2; y = DECK + 6; h = lowY - DECK - 10;
+      } else if (p.roof) {
+        const base = p.where === 'fore' ? fx : xs;
+        const len = p.where === 'fore' ? fl : (p.top ? tl : p.terrace ? al - tl : al);
+        x = p.terrace ? xs + tl : base; w = len;
+        y = DECK - H * p.lvl - 0.55 * S; h = 0.5 * S;
+      } else {
+        x = p.where === 'fore' ? fx : xs;
+        w = p.where === 'fore' ? fl : (p.top ? tl : al);
+        y = DECK - H * (p.lvl + 1); h = H;
+      }
+      dots(gd, n[i], x + pad, y + pad, w - 2 * pad, h - 2 * pad, col);
+    });
+    dots(gd, I.mariners[0], xs + al + 14, DECK - 0.55 * S, fx - xs - al - 28, 0.5 * S, css('--cyan'));
+    // labels
+    el('text', { x: xb, y: DECK - H * st.fore - 0.55 * S - 8, fill: css('--dim'), 'font-size': 11, 'text-anchor': 'end' }, svg,
+      `forecastle · ${st.fore} deck${st.fore > 1 ? 's' : ''}`);
+    el('text', { x: xs, y: DECK - H * (aftFull + (top ? 1 : 0)) - 0.55 * S - 8, fill: css('--dim'), 'font-size': 11 }, svg,
+      `aftercastle · ${aftFull}${top ? ' + shortened top' : ''}`);
+    el('text', { x: xs - 50, y: DECK + 4, fill: faint, 'font-size': 10 }, svg, 'stern');
+    el('text', { x: xb + 22, y: DECK + 4, fill: faint, 'font-size': 10 }, svg, 'bow');
+
+    // plan view
+    el('text', { x: 16, y: PLAN_Y - 52, fill: faint, 'font-size': 10, 'letter-spacing': '.14em' }, svg, 'PLAN');
+    el('path', { d: planPath(xs, PLAN_Y, A.L, A.B, S),
+      fill: 'rgba(201,164,106,.05)', stroke: wood, 'stroke-width': 1.2 }, svg);
+    const fw = g.fore_wid * A.B * S, aw = g.aft_wid * A.B * S;
+    el('rect', { x: fx, y: PLAN_Y - fw / 2, width: fl, height: fw, fill: 'rgba(201,164,106,.16)', stroke: wood, 'stroke-dasharray': '3 2' }, svg);
+    el('rect', { x: xs, y: PLAN_Y - aw / 2, width: al, height: aw, fill: 'rgba(201,164,106,.16)', stroke: wood, 'stroke-dasharray': '3 2' }, svg);
+    if (top) el('rect', { x: xs, y: PLAN_Y - aw / 2, width: tl, height: aw, fill: 'rgba(201,164,106,.18)', stroke: 'none' }, svg);
+    // dimension lines
+    el('line', { x1: xs, x2: xb, y1: PLAN_Y + A.B * S / 2 + 14, y2: PLAN_Y + A.B * S / 2 + 14, stroke: faint }, svg);
+    el('text', { x: (xs + xb) / 2, y: PLAN_Y + A.B * S / 2 + 28, fill: css('--dim'), 'font-size': 11, 'text-anchor': 'middle' }, svg,
+      `${f2(A.L)} m (esloria)`);
+    el('text', { x: xb + 22, y: PLAN_Y + 4, fill: css('--dim'), 'font-size': 11 }, svg, `${f2(A.B)} m beam`);
+
+    // readout
+    $('per').innerHTML = `${f2(per)}<small>m² per soldier</small>`;
+    $('per').style.setProperty('--c', col);
+    const v = $('verdict');
+    v.style.setProperty('--c', col);
+    v.textContent = per >= I.benchmark[1] ? 'Above the period allowance.'
+      : per >= I.benchmark[0] ? 'Within the 1.5–2.0 m² allowance.'
+      : `Short of the allowance by ${Math.round((I.benchmark[0] - per) * st.soldiers)} m² of usable floor.`;
+    // gauge
+    const gs = $('gauge-svg'); gs.innerHTML = '';
+    const gx = x => 10 + x / 2.5 * 420;
+    el('rect', { x: 10, y: 14, width: 420, height: 10, fill: '#1a1a2c' }, gs);
+    el('rect', { x: gx(1.5), y: 10, width: gx(2) - gx(1.5), height: 18, fill: 'rgba(0,255,159,.14)', stroke: 'rgba(0,255,159,.5)' }, gs);
+    el('rect', { x: 10, y: 14, width: Math.max(0, gx(Math.min(per, 2.5)) - 10), height: 10, fill: col, style: `filter:drop-shadow(0 0 5px ${col})` }, gs);
+    for (const t of [0, .5, 1, 1.5, 2, 2.5])
+      el('text', { x: gx(t), y: 44, fill: css('--faint'), 'font-size': 10, 'text-anchor': 'middle' }, gs, t);
+    el('text', { x: (gx(1.5) + gx(2)) / 2, y: 7, fill: css('--green'), 'font-size': 9, 'text-anchor': 'middle' }, gs, 'allowance');
+
+    const rows = [
+      ['enclosed castle decks', A.enclosed, wood],
+      ['open roofs and terraces', A.open, wood],
+      ['share of lower deck', A.lower, wood],
+    ];
+    $('areas').innerHTML =
+      `<tr><td>Juliana, ${st.scenario}</td><td class="n">${f2(A.L)} × ${f2(A.B)} m</td></tr>` +
+      `<tr><td>main deck (kept for the mariners)</td><td class="n" style="color:var(--cyan)">${f1(A.main)} m²</td></tr>` +
+      rows.map(([k, a]) => `<tr><td>${k}</td><td class="n">${f1(a)} m²</td></tr>`).join('') +
+      `<tr class="tot"><td>usable by soldiers</td><td class="n">${f1(A.total)} m²</td></tr>` +
+      `<tr><td>needed at 1.5 m² × ${st.soldiers}</td><td class="n">${f1(1.5 * st.soldiers)} m²</td></tr>`;
+  }
+  draw();
+
+  // ── minimum table ─────────────────────────────────────────────────────
+  (function mins() {
+    const t = $('mins');
+    const by = new Map(D.sweep.map(r => [`${r.scenario}|${r.soldiers}|${r.lower_share}`, r]));
+    let h = '<tr><th>case</th><th>soldiers</th>' + I.lower_shares.map(s =>
+      `<th>${s ? `+${Math.round(s * 100)}% lower deck` : 'castles only'}</th>`).join('') + '</tr>';
+    t.innerHTML = h;
+    const stackHtml = (f, a, top) =>
+      `<span class="stack"><span>${'<i></i>'.repeat(a)}${top ? '<i class="half"></i>' : ''}</span><span>${'<i></i>'.repeat(f)}</span></span>`;
+    for (const sc of SC) for (const n of I.soldiers) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="rh"><b>${sc}</b></td><td class="rh">${n}</td>`;
+      for (const s of I.lower_shares) {
+        const r = by.get(`${sc}|${n}|${s}`), m = r.minimum;
+        const td = document.createElement('td'), b = document.createElement('button');
+        const docOk = r.configs.find(c => c.fore === 2 && c.aft === 2 && c.aft_top).per_soldier >= I.benchmark[0];
+        if (m) {
+          b.innerHTML = `${stackHtml(m.fore, m.aft, m.aft_top)} ${m.fore} · ${m.aft}${m.aft_top ? ' + ½' : ''}`;
+          if (docOk) b.classList.add('doc');
+          b.title = `fore ${m.fore}, aft ${m.aft}${m.aft_top ? ' + shortened top' : ''}: ${m.per_soldier.toFixed(2)} m² per soldier`;
+        } else {
+          const best = Math.max(...r.configs.map(c => c.per_soldier));
+          b.innerHTML = `✗ <span style="color:var(--dim)">best ${best.toFixed(2)} m²</span>`;
+          b.classList.add('no');
+          b.title = 'Not reached even with three decks at each end';
+        }
+        b.addEventListener('click', () => {
+          const c = m || r.configs.reduce((a, c2) => c2.per_soldier > a.per_soldier ? c2 : a);
+          Object.assign(st, { scenario: sc, soldiers: n, share: s, fore: c.fore, aft: String(c.aft + (c.aft_top ? .5 : 0)) });
+          draw();
+          $('builder-section').scrollIntoView({ behavior: 'smooth' });
+        });
+        td.appendChild(b); tr.appendChild(td);
+      }
+      t.appendChild(tr);
+    }
+  })();
+})();
+</script>
+</body>
