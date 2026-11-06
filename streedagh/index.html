@@ -212,7 +212,7 @@
     <h2>The nights after the wreck</h2>
     <p class="sub">Each column is one night at Streedagh, from sunset (top) to dawn (bottom). The glowing bar is the moon while it is above the horizon, brighter the fuller it is. Times are local solar time.</p>
     <div class="sky-wrap"><svg id="sky" role="img" aria-label="Sky chart of the nights after the wreck"></svg></div>
-    <p class="sky-note">Moon and sun computed with astropy for Streedagh strand (54.40° N, 8.63° W), 17 September – 20 October 1588.</p>
+    <p class="sky-note">Moon and sun computed with astropy for Streedagh, 17 September – 20 October 1588 (at 54.40° N, 8.63° W, a few kilometres west of the strand; that shifts rise and set times by well under a minute).</p>
   </section>
 
   <section id="tests">
@@ -248,7 +248,7 @@
 
   <section id="map-section">
     <h2>Where</h2>
-    <p class="sub">The wreck positions are surveyed. Almost every other place is only implied by the letter, so it is drawn as a halo sized to how loosely it is known. The sea legs are schematic.</p>
+    <p class="sub">The three wrecks lie in a line a few hundred metres off Streedagh strand, in front of the lagoon; their positions here are approximate. Almost every other place is only implied by the letter, so it is drawn as a halo sized to how loosely it is known. The sea legs are schematic.</p>
     <div id="map" role="img" aria-label="Map of Cuéllar's route"></div>
   </section>
 
@@ -509,7 +509,7 @@
   }).addTo(map);
   const P = {
     channel:  { ll: [50.97, 1.85],  r: 8000,   name: 'Off Calais', how: 'named in the letter' },
-    streedagh:{ ll: [54.402, -8.628], r: 600,  name: 'Streedagh strand: the three wrecks', how: 'surveyed wreck sites' },
+    streedagh:{ ll: [54.4100, -8.549], r: 900,  name: 'Streedagh strand: the three wrecks', how: 'approximate positions' },
     inland:   { ll: [54.30, -8.20], r: 25000,  name: 'North Leitrim / Lough Melvin: the oat huts, MacClancy\'s castle', how: 'approximate: implied by the letter' },
     girona:   { ll: [55.245, -6.51], r: 4000,  name: 'Where the Girona was lost', how: 'inferred from the letter' },
     ulster:   { ll: [55.05, -6.95], r: 30000,  name: 'North Antrim / Derry coast: O\'Cahan, the bishop', how: 'approximate: implied by the letter' },
@@ -531,20 +531,23 @@
   leg(['dunkirk', 'antwerp'], { color: colorOf('--purple') });
   const phaseColor = { channel: '--blue', streedagh: '--pink', inland: '--yellow', girona: '--green', ulster: '--green', shetland: '--cyan', scotland: '--cyan', dunkirk: '--purple', antwerp: '--purple' };
   for (const [id, p] of Object.entries(P)) {
+    if (id === 'streedagh') continue;   // the wreck markers below stand for it
     const c = colorOf(phaseColor[id]);
     if (p.r > 1500) L.circle(p.ll, { radius: p.r, color: c, weight: 1, opacity: .5, fillColor: c, fillOpacity: .07, dashArray: '2 4' }).addTo(map);
     L.circleMarker(p.ll, { radius: 4, color: c, weight: 1, fillColor: c, fillOpacity: 1 }).addTo(map)
       .bindTooltip(`<b>${esc(p.name)}</b><br><span style="color:#8a8a9a">${esc(p.how)}</span>`, { className: 'place' });
   }
-  for (const w of D.wrecks.filter(w => w.id.includes('ENT-'))) {
-    L.circleMarker([w.lat, w.lon], { radius: 3, color: '#fff', weight: 1, fillColor: colorOf('--pink'), fillOpacity: 1 }).addTo(map)
-      .bindTooltip(`${esc(w.id.replace('streedagh:ENT-', '').replace('JUL', 'La Juliana').replace('LAV', 'La Lavia').replace('VIS', 'Santa María de Visón'))} (provisional identification)`, { className: 'place' });
+  // Approximate: a line ~200 m off the strand, in front of the lagoon. Which ship lies where is not shown.
+  const WRECKS = [[54.4087, -8.5545], [54.4097, -8.5490], [54.4117, -8.5435]];
+  for (const ll of WRECKS) {
+    L.circleMarker(ll, { radius: 3, color: '#fff', weight: 1, fillColor: colorOf('--pink'), fillOpacity: 1 }).addTo(map)
+      .bindTooltip('One of the three wrecks (approximate position).<br><span style="color:#8a8a9a">Provisionally La Juliana, La Lavia and Santa María de Visón</span>', { className: 'place' });
   }
   const VIEW = { channel: 'channel', streedagh: 'streedagh', inland: 'inland', ulster: 'ulster', sea: 'shetland', flanders: 'antwerp' };
   function flyTo(phase) {
     const p = P[VIEW[phase]];
     if (!p) return;
-    const z = p.r < 2000 ? 12 : p.r < 30000 ? 8 : 6;
+    const z = p.r < 2000 ? 14 : p.r < 30000 ? 8 : 6;
     map.flyTo(p.ll, z, { duration: .8 });
   }
 })();
