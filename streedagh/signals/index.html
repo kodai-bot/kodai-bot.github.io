@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>From Trace to Ship</title>
+  <meta name="description" content="Every claim about the three Armada wrecks at Streedagh starts as a trace someone looked at. Pick one, a gun, a magnetometer reading, a line of Cuéllar's letter, and follow it from the act of looking, through the documents that carry it, to what is inferred from it, with every step tagged by how it is known.">
+  <meta name="theme-color" content="#0a0a14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a14; --panel: #11111f; --panel2: #161628; --line: #2a2a40;
+      --fg: #e0e0e0; --dim: #8a8a9a; --faint: #55556a;
+      --pink: #ff2a6d; --green: #00ff9f; --cyan: #00fff9; --blue: #00b4ff; --purple: #c46bff; --yellow: #ffdd00;
+      --moon: #f4efd6; --wood: #c9a46a;
+      --serif: "Instrument Serif", Georgia, serif;
+      --t-source: var(--cyan); --t-derived: var(--green); --t-inferred: var(--yellow); --t-hypothesis: var(--purple);
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0; color: var(--fg);
+      font: 14px/1.65 "JetBrains Mono", ui-monospace, monospace;
+      background:
+        radial-gradient(ellipse 70% 40% at 50% -5%, rgba(0,255,249,.08), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,221,0,.04), transparent 70%),
+        var(--bg);
+      overflow-x: hidden;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2000;
+      background: repeating-linear-gradient(to bottom, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover, a:focus-visible { color: var(--green); text-shadow: 0 0 8px var(--green); outline: none; }
+    main { max-width: 1100px; margin: 0 auto; padding: 48px 16px 40px; }
+    .crumb { color: var(--dim); font-size: 12px; margin: 0 0 28px; }
+    .crumb .p { color: var(--green); }
+    .kicker { margin: 0; color: var(--pink); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; }
+    h1 {
+      margin: 6px 0 14px; font-family: var(--serif); font-style: italic; font-weight: 400;
+      font-size: clamp(2.8rem, 10vw, 5.6rem); line-height: .95; color: var(--moon);
+      text-shadow: 0 0 6px rgba(244,239,214,.5), 0 0 30px rgba(0,255,249,.25), 0 0 80px rgba(255,221,0,.15);
+    }
+    .lede { max-width: 68ch; color: #c9c9d4; margin: 0 0 10px; }
+    .lede em { font-family: var(--serif); font-style: italic; font-size: 1.18em; color: var(--moon); }
+    section { margin-top: 48px; }
+    h2 {
+      font-size: .82rem; text-transform: uppercase; letter-spacing: .2em; margin: 0 0 6px; color: var(--yellow);
+      display: flex; align-items: center; gap: 12px;
+    }
+    h2::before { content: "//"; color: var(--pink); }
+    h2::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+    .sub { color: var(--dim); margin: 0 0 18px; max-width: 76ch; }
+    .tag {
+      display: inline-block; font-size: 9.5px; padding: 0 6px; border: 1px solid; border-radius: 2px;
+      text-transform: uppercase; letter-spacing: .12em; line-height: 1.6; vertical-align: 1px;
+      color: var(--c); border-color: color-mix(in srgb, var(--c) 45%, transparent);
+    }
+    .tag.source { --c: var(--t-source); } .tag.derived { --c: var(--t-derived); }
+    .tag.inferred { --c: var(--t-inferred); } .tag.hypothesis { --c: var(--t-hypothesis); }
+
+    /* ── layout ─────────────────────────────────────────── */
+    .explorer { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
+    @media (max-width: 820px) { .explorer { grid-template-columns: 1fr; } }
+    .picker { background: var(--panel); border: 1px solid var(--line); position: sticky; top: 12px; max-height: calc(100vh - 24px); display: flex; flex-direction: column; }
+    @media (max-width: 820px) { .picker { position: static; max-height: 360px; } }
+    .groups { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; border-bottom: 1px solid var(--line); }
+    .groups button {
+      font: inherit; font-size: 11px; color: var(--dim); background: transparent; border: 1px solid var(--line);
+      padding: 2px 8px; cursor: pointer; border-radius: 2px;
+    }
+    .groups button[aria-pressed="true"] { color: var(--bg); background: var(--cyan); border-color: var(--cyan); }
+    .groups button:hover { color: var(--fg); border-color: var(--dim); }
+    .groups button[aria-pressed="true"]:hover { color: var(--bg); }
+    .filter { margin: 8px 10px 0; font: inherit; font-size: 12px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 4px 8px; }
+    .filter:focus { outline: 1px solid var(--cyan); }
+    .picker, .items { scrollbar-color: var(--line) var(--panel); scrollbar-width: thin; }
+    .items { list-style: none; margin: 0; padding: 6px 0; overflow-y: auto; flex: 1; }
+    .items li button {
+      display: block; width: 100%; text-align: left; font: inherit; font-size: 12px; line-height: 1.4;
+      color: #c4c4cf; background: none; border: 0; border-left: 2px solid transparent; padding: 6px 10px; cursor: pointer;
+    }
+    .items li button:hover { background: var(--panel2); color: var(--fg); }
+    .items li button[aria-current="true"] { border-left-color: var(--cyan); background: var(--panel2); color: var(--moon); }
+    .items .id { color: var(--faint); font-size: 10.5px; display: block; }
+    .count { color: var(--faint); font-size: 11px; padding: 0 10px 8px; }
+
+    /* ── chain header + time strip ─────────────────────── */
+    .head { background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--cyan); padding: 16px 18px; }
+    .head h3 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 1.9em; color: var(--moon); line-height: 1.15; }
+    .head .meta { color: var(--dim); font-size: 12px; margin-top: 4px; }
+    .head .meta code { color: var(--faint); }
+    .strip { margin-top: 14px; position: relative; }
+    .strip svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .strip text { font-family: "JetBrains Mono", monospace; }
+    .stripnote { color: var(--dim); font-size: 12px; margin: 8px 0 0; }
+    .tip {
+      position: absolute; pointer-events: none; background: var(--panel2); border: 1px solid var(--line); color: var(--fg);
+      font-size: 11.5px; padding: 6px 8px; max-width: 300px; z-index: 10; display: none; line-height: 1.45;
+    }
+    .carriers { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; font-size: 12px; color: var(--dim); }
+    .carriers .c { border: 1px solid var(--line); padding: 2px 8px; color: #c4c4cf; }
+    .carriers .c.nh { border-style: dashed; color: var(--dim); }
+    .carriers .arr { color: var(--pink); }
+
+    /* ── steps ───────────────────────────────────────────── */
+    .steps { list-style: none; margin: 14px 0 0; padding: 0; position: relative; }
+    .steps::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
+    .st { position: relative; padding: 0 0 12px 30px; }
+    .st::before {
+      content: ""; position: absolute; left: 4px; top: 14px; width: 11px; height: 11px; background: var(--bg);
+      border: 2px solid var(--c); transform: rotate(45deg);
+    }
+    .st.source { --c: var(--t-source); } .st.derived { --c: var(--t-derived); }
+    .st.inferred { --c: var(--t-inferred); } .st.hypothesis { --c: var(--t-hypothesis); }
+    .card { background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--c); padding: 10px 14px 11px; }
+    .card .top { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+    .card .kind { color: var(--dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: .14em; }
+    .card .by { color: var(--faint); font-size: 11px; margin-left: auto; }
+    .card .txt { margin: 6px 0 0; color: var(--fg); }
+    .card blockquote { margin: 8px 0 0; font-family: var(--serif); font-style: italic; font-size: 1.28em; line-height: 1.35; color: var(--moon); }
+    .card .loc { color: var(--dim); font-size: 11.5px; margin-top: 4px; }
+    .card .val { font-size: 1.4em; color: var(--moon); margin-top: 4px; }
+    .card .val small { font-size: 12px; color: var(--dim); }
+    .card .ref { color: var(--faint); font-size: 10.5px; margin-top: 6px; word-break: break-all; }
+    .card details { margin-top: 6px; font-size: 12px; color: var(--dim); }
+    .card summary { cursor: pointer; color: var(--dim); }
+    .card summary:hover { color: var(--fg); }
+    .pbar { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--dim); }
+    .pbar .track { display: block; flex: 0 0 160px; height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+    .pbar .fill { display: block; height: 100%; background: var(--c); border-radius: 3px; }
+    .pbar b { color: var(--fg); font-weight: 400; }
+    .absent { color: var(--dim); font-size: 12px; margin-top: 6px; }
+    .absent b { color: var(--pink); font-weight: 400; }
+    .exp { margin: 6px 0 0; padding: 0; list-style: none; font-size: 12.5px; }
+    .exp li { color: #c4c4cf; }
+    .exp b { color: var(--moon); font-weight: 400; }
+
+    .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    .legend div { background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; font-size: 12.5px; color: #c4c4cf; }
+    .legend .tag { margin-bottom: 4px; }
+    .stats { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 10px; color: var(--dim); font-size: 12px; }
+    .stats b { color: var(--moon); font-weight: 400; font-size: 1.3em; display: block; }
+    footer { margin-top: 70px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--dim); font-size: 12px; }
+    footer p { margin: 0 0 8px; max-width: 84ch; }
+    footer code { color: #c4c4cf; }
+    .loading { color: var(--dim); padding: 20px; }
+  </style>
+</head>
+<body>
+<main>
+  <p class="crumb"><span class="p">~ $</span> <a href="../../">kodai-bot</a> / <a href="../">streedagh</a> / signals</p>
+  <p class="kicker">Streedagh, 1588 · the signal record</p>
+  <h1>From trace to ship</h1>
+  <p class="lede">Everything said about the three Armada wrecks at Streedagh starts as <em>a trace someone looked at</em>: a gun lifted by divers, a spread of magnetometer readings, a line in a survivor's letter. Pick one and follow it: from the act of looking, through the documents that carry it to us, to what is inferred from it. Each step says how it is known.</p>
+
+  <section>
+    <h2>How to read a chain</h2>
+    <div class="legend">
+      <div><span class="tag source">source</span><br>What was seen or written: the act of looking, the words as printed, a figure as stated. Kept apart from everything below it.</div>
+      <div><span class="tag derived">derived</span><br>Arithmetic on a stated figure, with its recipe: a weight mark in cantara turned into kilograms, codos into metres.</div>
+      <div><span class="tag inferred">inferred</span><br>A judgement with a probability and a falsifier: which ship a gun belongs to, when an event happened, what a passage records.</div>
+      <div><span class="tag hypothesis">hypothesis</span><br>Stated before the evidence that would test it, with what would prove it wrong. Untested until that evidence arrives.</div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section>
+    <h2>Follow a trace</h2>
+    <p class="sub">The time strip shows the distance a trace covers: when it was looked at or written (<span style="color:var(--cyan)">●</span>), the documents that carry it (<span style="color:var(--cyan)">◇</span>, dashed if this project does not hold a copy), and the moments it is taken to record (<span style="color:var(--yellow)">▬</span>, as wide as their uncertainty). A gun read in 1985 speaks of 1570 and 1588.</p>
+    <div class="explorer">
+      <nav class="picker" aria-label="Choose a trace">
+        <div class="groups" id="groups" role="group" aria-label="Kind of trace"></div>
+        <input class="filter" id="filter" type="search" placeholder="filter…" aria-label="Filter the list">
+        <p class="count" id="count"></p>
+        <ul class="items" id="items"></ul>
+      </nav>
+      <div id="chain" aria-live="polite"><p class="loading">Loading the record…</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Data: <code>signal_chains.json</code>, written by <code>1_signal_field/site_record/export_view.py</code> in <a href="https://github.com/kodai-bot/streedagh-armada">kodai-bot/streedagh-armada</a> from the site record (one bundle in the signal schema, validated by its own checker). Nothing on this page is computed here; every step shows the id of the record it comes from. <span id="sha"></span></p>
+    <p>Positions are not held for any trace: the divers' and surveyors' coordinates have not been published, so the record says so rather than guessing. Cuéllar's passages are reports of events, not physical traces, so no signal is minted for them; they are attached directly to the events they describe. The three ships at Streedagh are war graves.</p>
+    <p>By <a href="../../">Dylan Foley</a> · <a href="https://allismotion.org">allismotion.org</a> · see also <a href="../">Cuéllar's nights</a>, <a href="../ships/">Standing room</a> and <a href="../../esper/">Esper</a></p>
+  </footer>
+</main>
+
+<script>
+const GROUPS = [
+  ["guns", "Guns", "Bronze guns lifted from Site 1 in 1985 and 2015"],
+  ["magnetometry", "Magnetometry", "The three spreads of readings, 1985"],
+  ["site1", "Site 1", "What the divers reported and how it lay"],
+  ["documents", "Documents", "The Lisbon muster and the 1588 measurements"],
+  ["cuellar", "Cuéllar", "125 passages of the survivor's letter"],
+];
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtYear = y => {
+  const yr = Math.floor(y), m = Math.floor((y - yr) * 12);
+  return m === 6 && Math.abs(y - yr - 0.5) < 0.01 ? String(yr) : `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][Math.min(11, m)]} ${yr}`;
+};
+const fmtSpan = w => {
+  const a = fmtYear(w[0]), b = fmtYear(w[1]);
+  return a === b ? a : `${a} – ${b}`;
+};
+let DATA, group = "guns", current = null;
+
+fetch("chains.json").then(r => r.json()).then(d => {
+  DATA = d;
+  const c = d.counts;
+  document.getElementById("stats").innerHTML = [
+    ["detections", "things looked at or read"], ["signals", "physical traces"], ["inferences", "judgements, each with a falsifier"],
+    ["sources", "ships, events and makers inferred"], ["acquisitions", "acts of looking"]
+  ].map(([k, l]) => `<div><b>${c[k] ?? 0}</b>${l}</div>`).join("");
+  document.getElementById("sha").textContent = `Record ${d.record_sha256.slice(0, 12)}…, exported ${d.generated}.`;
+  const g = document.getElementById("groups");
+  g.innerHTML = GROUPS.map(([k, l, t]) => `<button type="button" data-g="${k}" title="${esc(t)}" aria-pressed="${k === group}">${l} <span style="opacity:.6">${d.chains.filter(x => x.group === k).length}</span></button>`).join("");
+  g.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    group = b.dataset.g; document.getElementById("filter").value = "";
+    g.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === group));
+    list(); const first = DATA.chains.find(x => x.group === group); if (first) show(first.id);
+  });
+  document.getElementById("filter").addEventListener("input", list);
+  window.addEventListener("hashchange", fromHash);
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { const c = DATA.chains.find(x => x.id === current); if (c) strip(c); }, 150); });
+  if (!fromHash()) { list(); show("G-SEVERO"); }
+});
+
+function fromHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const c = id && DATA.chains.find(x => x.id === id);
+  if (!c) return false;
+  if (c.group !== group) {
+    group = c.group;
+    document.querySelectorAll("#groups button").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === group));
+  }
+  list(); show(id, false); return true;
+}
+
+function list() {
+  const f = document.getElementById("filter").value.toLowerCase();
+  const xs = DATA.chains.filter(x => x.group === group && (!f || (x.title + " " + x.id + " " +
+    (x.steps.find(s => s.quote)?.quote || "")).toLowerCase().includes(f)));
+  document.getElementById("count").textContent = `${xs.length} trace${xs.length === 1 ? "" : "s"}`;
+  document.getElementById("items").innerHTML = xs.map(x =>
+    `<li><button type="button" data-id="${esc(x.id)}" aria-current="${x.id === current}">${esc(x.title)}<span class="id">${esc(x.id)}</span></button></li>`).join("");
+  document.querySelectorAll("#items button").forEach(b => b.addEventListener("click", () => show(b.dataset.id)));
+}
+
+function show(id, push = true) {
+  const c = DATA.chains.find(x => x.id === id); if (!c) return;
+  current = id;
+  if (push) history.replaceState(null, "", "#" + encodeURIComponent(id));
+  document.querySelectorAll("#items button").forEach(b => b.setAttribute("aria-current", b.dataset.id === id));
+  const grp = GROUPS.find(g => g[0] === c.group);
+  const sig = c.signal ? `signal <code>${esc(c.signal)}</code>` : `no signal minted: a report of an event, attached straight to the event`;
+  document.getElementById("chain").innerHTML = `
+    <div class="head">
+      <h3>${esc(c.title)}</h3>
+      <div class="meta">${esc(grp[2])} · ${sig}</div>
+      <div class="strip" id="strip"></div>
+      <p class="stripnote" id="stripnote"></p>
+      ${c.carriers.length ? `<div class="carriers"><span>carried by</span>${c.carriers.map((k, i) =>
+        `${i ? '<span class="arr">→</span>' : ""}<span class="c${k.held ? "" : " nh"}" title="${esc(k.title)}${k.held ? "" : " (no copy held by this project)"}">${esc(k.by.split(" (")[0])}, ${k.year}${k.held ? "" : " · not held"}</span>`).join("")}</div>` : ""}
+    </div>
+    <ol class="steps">${c.steps.map(step).join("")}</ol>`;
+  strip(c);
+}
+
+function step(s) {
+  let body = "";
+  if (s.quote) body += `<blockquote>“${esc(s.quote)}”</blockquote><div class="loc">${esc(s.locator || "")}${s.observer_role ? ` · ${esc(s.observer_role)}` : ""}${s.hedges?.length ? ` · hedged: ${s.hedges.map(h => `“${esc(h)}”`).join(", ")}` : ""}</div>`;
+  if (s.kind === "what the carrier says") body += `<div class="absent">position: <b>not held</b>${s.position_absent && s.position_absent !== "not_held" ? ` (${esc(s.position_absent.replace(/_/g, " "))})` : ""}</div>`;
+  if (s.value) {
+    const v = s.value, n = v.value !== undefined ? v.value : v.interval ? `${v.interval[0]}–${v.interval[1]}` : "?";
+    body += `<div class="val">${esc(n)} <small>${esc(v.unit || "")}</small></div>${v.note ? `<div class="loc">${esc(v.note)}</div>` : ""}${s.recipe ? `<div class="loc">recipe: ${esc(s.recipe)}</div>` : ""}`;
+  }
+  if (s.text && !s.quote) body += `<p class="txt">${esc(s.text)}</p>`;
+  if (s.of) body += `<div class="loc">event: ${esc(s.of)}</div>`;
+  if (s.when && s.kind !== "the act of looking") body += `<div class="loc">when: ${fmtSpan(s.when)}</div>`;
+  if (s.kind === "the act of looking" && s.when) body += `<div class="loc">${fmtSpan(s.when)}</div>`;
+  if (s.detail && Object.keys(s.detail).length) body += `<ul class="exp">${Object.entries(s.detail).filter(([, v]) => v).map(([k, v]) => `<li>${esc(k.replace(/_/g, " "))}: <b>${esc(v)}</b></li>`).join("")}</ul>`;
+  if (s.expected && typeof s.expected === "object") {
+    body += `<ul class="exp">${Object.entries(s.expected).map(([k, v]) => `<li>${esc(k.replace(/_/g, " "))}: <b>${
+      v && typeof v === "object" && "value" in v ? `${v.value}${v.interval ? ` [${v.interval[0]}–${v.interval[1]}]` : ""} ${esc(v.unit || "")}` : esc(typeof v === "object" ? JSON.stringify(v) : v)}</b></li>`).join("")}</ul>`;
+  } else if (s.expected) body += `<p class="txt">expected: ${esc(s.expected)}</p>`;
+  if (s.stated_before) body += `<div class="loc">stated before the test: ${esc(s.stated_before)} · untested</div>`;
+  const p = s.p ?? s.credence;
+  if (typeof p === "number") body += `<div class="pbar"><span>${s.p != null ? "probability" : "credence"}</span><span class="track"><span class="fill" style="width:${(p * 100).toFixed(1)}%"></span></span><b>${p}</b></div>`;
+  const more = [];
+  if (s.falsifier && typeof s.falsifier === "string") more.push(`<b>Would be wrong if:</b> ${esc(s.falsifier)}`);
+  if (s.residue) more.push(`<b>Still open:</b> ${esc(s.residue)}`);
+  if (s.blind_spots) more.push(`<b>What this act could not see:</b> ${esc(s.blind_spots)}`);
+  if (more.length) body += `<details><summary>${s.blind_spots ? "blind spots" : "what would prove it wrong"}</summary>${more.map(m => `<p style="margin:4px 0">${m}</p>`).join("")}</details>`;
+  return `<li class="st ${s.tag}"><div class="card"><div class="top"><span class="tag ${s.tag}">${s.tag}</span><span class="kind">${esc(s.kind)}</span>${s.by ? `<span class="by">${/\.py\b/.test(s.by) ? "rule in " : "by "}${esc(s.by)}</span>` : ""}</div>${body}<div class="ref">${esc(s.ref)}</div></div></li>`;
+}
+
+function strip(c) {
+  const host = document.getElementById("strip");
+  const W = Math.max(320, Math.round(host.clientWidth || 760)), H = 118, narrow = W < 600, L = narrow ? 76 : 118, R = 14;
+  const acts = c.steps.filter(s => s.kind === "the act of looking" && s.when);
+  const events = c.steps.filter(s => s.when && s.kind !== "the act of looking");
+  const years = [...acts.flatMap(s => s.when), ...events.flatMap(s => s.when), ...c.carriers.map(k => k.year + 0.5)];
+  const lo = Math.min(1560, ...years) - 5, hi = Math.max(2025, ...years) + 5;
+  const x = y => L + (y - lo) / (hi - lo) * (W - L - R);
+  const lane = { act: 26, car: 56, ev: 86 };
+  const step_ = narrow ? 100 : 50;
+  const ticks = []; for (let t = Math.ceil(lo / step_) * step_; t <= hi; t += step_) ticks.push(t);
+  let g = `<line x1="${L}" x2="${W - R}" y1="104" y2="104" stroke="#2a2a40"/>` +
+    ticks.map(t => `<line x1="${x(t)}" x2="${x(t)}" y1="12" y2="104" stroke="#1c1c30"/><text x="${x(t)}" y="116" fill="#55556a" font-size="10" text-anchor="middle">${t}</text>`).join("") +
+    (narrow ? [["looked at", lane.act], ["carried by", lane.car], ["records", lane.ev]]
+            : [["looked at / written", lane.act], ["carried by", lane.car], ["what it records", lane.ev]]).map(([t, y]) =>
+      `<text x="0" y="${y + 4}" fill="#8a8a9a" font-size="10.5">${t}</text>`).join("");
+  const marks = [];
+  acts.forEach(s => {
+    const a = x(s.when[0]), b = x(s.when[1]);
+    if (b - a > 4) marks.push(`<rect x="${a}" y="${lane.act - 4}" width="${b - a}" height="8" rx="4" fill="#00fff9" fill-opacity=".35" stroke="#00fff9" data-tip="${esc(`${s.text} · ${fmtSpan(s.when)}`)}"/>`);
+    marks.push(`<circle cx="${a}" cy="${lane.act}" r="5" fill="#00fff9" stroke="#11111f" stroke-width="2" data-tip="${esc(`${s.text} · ${fmtSpan(s.when)}`)}"/>`);
+  });
+  c.carriers.forEach(k => {
+    const cx = x(k.year + 0.5);
+    marks.push(`<rect x="${cx - 5}" y="${lane.car - 5}" width="10" height="10" transform="rotate(45 ${cx} ${lane.car})" fill="#11111f" stroke="#00fff9" stroke-width="2" ${k.held ? "" : 'stroke-dasharray="2 2"'} data-tip="${esc(`${k.title}, ${k.year}${k.held ? "" : " (no copy held)"}`)}"/>`);
+  });
+  const seen = {};
+  events.forEach(s => {
+    const a = x(s.when[0]), b = Math.max(x(s.when[1]), a + 6);
+    const key = Math.round(a / 8); const off = (seen[key] = (seen[key] ?? -1) + 1) * 7;
+    marks.push(`<rect x="${a - 3}" y="${lane.ev - 4 + off}" width="${b - a + 6}" height="8" rx="4" fill="#ffdd00" stroke="#11111f" stroke-width="2" data-tip="${esc(`${s.of || s.text} · ${fmtSpan(s.when)}${s.credence != null ? ` · credence ${s.credence}` : ""}`)}"/>`);
+  });
+  const el = host;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H + 8}" role="img" aria-label="Time strip for this trace">${g}${marks.join("")}</svg><div class="tip" id="tip"></div>`;
+  const tip = el.querySelector("#tip");
+  el.querySelectorAll("[data-tip]").forEach(m => {
+    m.style.cursor = "default";
+    m.addEventListener("mouseenter", () => { tip.textContent = m.dataset.tip; tip.style.display = "block"; });
+    m.addEventListener("mousemove", e => { const r = el.getBoundingClientRect(); tip.style.left = Math.min(e.clientX - r.left + 12, r.width - 300) + "px"; tip.style.top = (e.clientY - r.top + 12) + "px"; });
+    m.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+  });
+  const actY = acts[0]?.when[0], evYs = events.flatMap(s => s.when);
+  const note = document.getElementById("stripnote");
+  if (actY && evYs.length) {
+    const far = Math.max(...evYs.map(y => Math.abs(actY - y)));
+    note.textContent = `Looked at ${fmtYear(actY)}; what it records lies up to ${far < 2 ? Math.round(far * 12) + " months" : Math.round(far) + " years"} away from that.`;
+  } else note.textContent = actY ? `Looked at ${fmtYear(actY)}. No dated event is inferred from this trace yet.` : "";
+}
+</script>
+</body>
+</html>
