@@ -194,6 +194,17 @@
   </section>
 
   <section>
+    <h2>Why it isn't all gone already</h2>
+    <p class="sub">At this rate Site 1 loses about <b id="pct">2.3%</b> of what remains each decade. If that had held since 1588, <b id="gone">about 63%</b> of the site would be gone by now, yet divers found articulated hull in 1985, and in 2015 a rudder came out after long burial. The rate on this page cannot have held for four centuries. The likely history comes in three phases:</p>
+    <div class="cards">
+      <div class="card" style="--c:var(--faint)"><h3>1588: the first months and years</h3><p>Losses were heavy. Whatever stood proud of the seabed broke up, washed onto the strand or was eaten by shipworm. What survives is mostly what the sand buried quickly.</p></div>
+      <div class="card" style="--c:var(--s3)"><h3>Centuries under the sand</h3><p>Buried in sand with almost no oxygen, timber and iron change very little. Over this long phase the loss rate was close to zero.</p></div>
+      <div class="card" style="--c:var(--s1)"><h3>Now: uncovered again</h3><p>Storms have stripped Site 1 in recent decades (1985, 2015). Only now does the rate on this page apply. That points to a change in the sand around the site, from storms, a shifting sand supply or climate, rather than steady wear.</p></div>
+    </div>
+    <div class="callout"><b>So read the numbers this way.</b> They are the cost of the regime the site is in now, not a rate since 1588. That most of the site has not already gone is evidence that the exposure is recent or has got worse, which is a reason to act, not to wait. The tonnes are an upper bound: they apply the loss to the mass the <a href="../seabed/">budget</a> puts on the seabed on the wreck day, as if it were all still there. The percentage, a share of whatever actually remains, is the sounder figure.</div>
+  </section>
+
+  <section>
     <h2>What goes first</h2>
     <p class="sub">The share of each kind of material lost per decade, median with its range. Timber and organics go first; bronze lasts longest. The divers recorded that uncovered organics are "attacked by flora and fauna" and that sand abrades the bronze guns. How fast each class is lost is a stated assumption <span class="tag hypothesis">hypothesis</span>, the same at every site.</p>
     <div class="cgrid" id="cgrid"></div>
@@ -263,10 +274,13 @@ fetch("targets.json").then(x => x.json()).then(d => {
 
 function hero() {
   const s = D.sites.SITE1, l = s.lost_per_decade_t.all_classes, p = D.p_highest_loss.SITE1;
-  const pe = s.p_any_exposure_in_decade;
+  const pe = s.p_any_exposure_in_decade, pct = l.median / s.on_seabed_t.all.median * 100;
+  const gone = (1 - Math.pow(1 - pct / 100, (new Date().getFullYear() - 1588) / 10)) * 100;
+  document.getElementById("pct").textContent = pct.toFixed(1) + "%";
+  document.getElementById("gone").textContent = "about " + Math.round(gone) + "%";
   document.getElementById("hero").innerHTML = `
     <div class="tile big" style="--c:var(--s1)"><p class="k">Site 1 loses, per decade</p><div class="v">≈ ${f1(l.median)} t</div>
-      <div class="r">5–95%: ${f1(l.p05)}–${f1(l.p95)} t</div><p>if nothing is done; ${f1(s.lost_per_decade_t.timber.median)} t of it hull timber</p></div>
+      <div class="r">5–95%: ${f1(l.p05)}–${f1(l.p95)} t</div><p>about ${pct.toFixed(1)}% of what remains, if nothing is done; ${f1(s.lost_per_decade_t.timber.median)} t of it hull timber. An upper bound: it assumes the wreck-day mass is all still there</p></div>
     <div class="tile" style="--c:var(--s1)"><p class="k">ranked first</p><div class="v">${p >= 0.995 ? "&gt;99%" : Math.round(p * 100) + "%"}</div><div class="r">of draws</div><p>Site 1 has the highest loss in nearly every draw</p></div>
     <div class="tile"><p class="k">chance Site 1 is uncovered</p><div class="v">${Math.round(pe.median * 100)}%</div><div class="r">${Math.round(pe.p05 * 100)}–${Math.round(pe.p95 * 100)}%</div><p>at least once in the next ten years</p></div>
     <div class="tile"><p class="k">all three sites</p><div class="v">${f1(SITES.reduce((a, k) => a + D.sites[k].lost_per_decade_t.all_classes.median, 0))} t</div><div class="r">a decade, summed medians</div><p>of ${n0(SITES.reduce((a, k) => a + D.sites[k].on_seabed_t.all.median, 0))} t on the seabed</p></div>`;
